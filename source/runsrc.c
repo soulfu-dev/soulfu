@@ -1538,19 +1538,32 @@ signed char run_script(unsigned char* address, unsigned char* file_start, unsign
                         delay_promote();
                         break;
                     case SYS_INPUTREFRESH:
-                        input_setup_key_buffer();
-                        input_setup_key_shift();
-                        SDL_JoystickEventState(SDL_ENABLE);
+                        // refresh joystick mapping
+                        input_free_joysticks();
+                        repeat(i, MAX_JOYSTICK)
+                        {
+                                joystick_structure[i] = NULL;
+                                joystick_instance_id_mapping[i] = 0;
+                                joystick_position_xy[i][X] = 0.0f;
+                                joystick_position_xy[i][Y] = 0.0f;
+                                repeat(j, MAX_JOYSTICK_BUTTON)
+                                {
+                                    joystick_button_pressed[i][j] = FALSE;
+                                    joystick_button_unpressed[i][j] = FALSE;
+                                    joystick_button_down[i][j] = FALSE;
+                                }
+                        }
+
                         num_joystick = SDL_NumJoysticks();
                         repeat(i, num_joystick)
                         {
                             if(i < MAX_JOYSTICK)
                             {
                                 joystick_structure[i] = SDL_JoystickOpen(i);
+                                joystick_instance_id_mapping[i] = SDL_JoystickInstanceID(joystick_structure[i]);
                                 log_message("INFO:     %d...  %s", i, SDL_JoystickName(joystick_structure[i]));
                             }
                         }
-                        atexit(input_free_joysticks);
                         break;
                     case SYS_SFXVOLUME:
                         master_sfx_volume = m;

@@ -76,6 +76,7 @@ unsigned char mouse_camera_active = FALSE;      //
 #define MAX_JOYSTICK_BUTTON 30
 int num_joystick;
 void* joystick_structure[MAX_JOYSTICK];         // Used for closing the joysticks...
+int joystick_instance_id_mapping[MAX_JOYSTICK]; // used to map instance id to 0..MAX_JOYSTICK-1 range
 unsigned char joystick_button_pressed[MAX_JOYSTICK][MAX_JOYSTICK_BUTTON];
 unsigned char joystick_button_unpressed[MAX_JOYSTICK][MAX_JOYSTICK_BUTTON];
 unsigned char joystick_button_down[MAX_JOYSTICK][MAX_JOYSTICK_BUTTON];
@@ -159,6 +160,21 @@ void input_free_joysticks(void)
 }
 
 //-------------------------------------------------------------------------------------------
+int input_map_joystick_instance_id(int instance_id)
+{
+    // converts joystick instance_id (for example from joystick events)
+    // to the range 0..MAX_JOYSTICK-1
+    int i;
+
+    repeat(i, MAX_JOYSTICK)
+    {
+        if (joystick_instance_id_mapping[i] == instance_id)
+            return i;
+    }
+    return MAX_JOYSTICK;    // outside the valid range
+}
+
+//-------------------------------------------------------------------------------------------
 void input_update(void)
 {
     // <ZZ> This function helps in doing the mouse/window interface & stuff...
@@ -225,6 +241,7 @@ void input_update(void)
 
 
             // Fill in button presses...  Only set 'em (don't unset 'em here...  unset when used...)
+            // buttons: LEFT, RIGHT, SPECIAL1, SPECIAL2...
             repeat(j, 4)
             {
                 button = player_device_button[i][j];
@@ -360,6 +377,7 @@ void input_setup(void)
     repeat(i, MAX_JOYSTICK)
     {
         joystick_structure[i] = NULL;
+        joystick_instance_id_mapping[i] = 0;
         joystick_position_xy[i][X] = 0.0f;
         joystick_position_xy[i][Y] = 0.0f;
         repeat(j, MAX_JOYSTICK_BUTTON)
@@ -378,6 +396,7 @@ void input_setup(void)
         if(i < MAX_JOYSTICK)
         {
             joystick_structure[i] = SDL_JoystickOpen(i);
+            joystick_instance_id_mapping[i] = SDL_JoystickInstanceID(joystick_structure[i]);
             log_message("INFO:     %d...  %s", i, SDL_JoystickName(joystick_structure[i]));
         }
     }
@@ -561,6 +580,7 @@ void input_read(void)
                 }
                 break;
             case SDL_JOYAXISMOTION:
+                event.jbutton.which = input_map_joystick_instance_id(event.jbutton.which);
                 if(event.jaxis.which < MAX_JOYSTICK)
                 {
                     if(event.jaxis.axis == X || event.jaxis.axis == Y)
@@ -617,6 +637,7 @@ void input_read(void)
                 }
                 break;
             case SDL_JOYBUTTONUP:
+                event.jbutton.which = input_map_joystick_instance_id(event.jbutton.which);
                 if(event.jbutton.which < MAX_JOYSTICK)
                 {
                     if(event.jbutton.button < MAX_JOYSTICK_BUTTON)
@@ -627,6 +648,7 @@ void input_read(void)
                 }
                 break;
             case SDL_JOYBUTTONDOWN:
+                event.jbutton.which = input_map_joystick_instance_id(event.jbutton.which);
                 if(event.jbutton.which < MAX_JOYSTICK)
                 {
                     if(event.jbutton.button < MAX_JOYSTICK_BUTTON)
@@ -638,6 +660,7 @@ void input_read(void)
                 }
                 break;
             case SDL_JOYHATMOTION:
+                event.jbutton.which = input_map_joystick_instance_id(event.jbutton.which);
                 if(event.jhat.which < MAX_JOYSTICK) {
                     if(event.jhat.value & SDL_HAT_UP) {
                         if(!joystick_button_down[event.jhat.which][dpad_offset + 0]) {
@@ -689,6 +712,35 @@ void input_read(void)
                             joystick_button_unpressed[event.jhat.which][dpad_offset + 3] = TRUE;
                             joystick_button_down[event.jhat.which][dpad_offset + 3] = FALSE;
                         }
+                    }
+                }
+                break;
+            case SDL_JOYDEVICEADDED:
+            case SDL_JOYDEVICEREMOVED:
+                // refresh joystick mapping
+                input_free_joysticks();
+                repeat(i, MAX_JOYSTICK)
+                {
+                        joystick_structure[i] = NULL;
+                        joystick_instance_id_mapping[i] = 0;
+                        joystick_position_xy[i][X] = 0.0f;
+                        joystick_position_xy[i][Y] = 0.0f;
+                        repeat(j, MAX_JOYSTICK_BUTTON)
+                        {
+                            joystick_button_pressed[i][j] = FALSE;
+                            joystick_button_unpressed[i][j] = FALSE;
+                            joystick_button_down[i][j] = FALSE;
+                        }
+                }
+
+                num_joystick = SDL_NumJoysticks();
+                repeat(i, num_joystick)
+                {
+                    if(i < MAX_JOYSTICK)
+                    {
+                        joystick_structure[i] = SDL_JoystickOpen(i);
+                        joystick_instance_id_mapping[i] = SDL_JoystickInstanceID(joystick_structure[i]);
+                        log_message("INFO:     %d...  %s", i, SDL_JoystickName(joystick_structure[i]));
                     }
                 }
                 break;
