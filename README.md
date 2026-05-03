@@ -193,7 +193,7 @@ make
 + Elf has been rebalanced. The initial HP, strength and intelligence have been lowered. Taming, especially mountable monsters, is easier. The bow equipped initially by Elf is magical.
 + Some bug fixing has been done around G'nome Copter. Now it can be built by G'nome at intelligence of 30.
 + Port to SDL2.
-+ Joystick support up to 16 buttons. The limit was 8 in the original and it made impossible to map controls to some buttons on modern gamepads.
++ Much better joystick support thanks to MiyanoOsu.
 + Syntax definition for Sublime to add syntax highlighting for SoulFu scripting language (by Sky).
 
 ## What could be done?
