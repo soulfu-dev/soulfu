@@ -1,32 +1,32 @@
 Main Menu
 Settings
 Player 
-Updating
+
 Message
 Map
-Statistics
-Techniques
-Inventory
-Equipment
-Book
-Chest
-Keyhole
-Trap
+
+
+
+
+
+
+
+
 Local Game
 Network Game
 Controls
-Buy Me
+
 Quit
 Save Changes
 Continue
 Go Back
-Buy
-Sell
+
+
 Close
-Network Broken
+
 Screen :
 Colors :
-Gamma  :
+
 Mode   :
 Window,Fullscreen
 Sound  :
@@ -35,23 +35,23 @@ Scaling:
 Small,Medium,Large,Huge
 Note:  You'll need to restart for
        some changes to work...
-Speed  :
+
 Device :
 None,Keyboard,Joystk 1,Joystk 2,Joystk 3,Joystk 4
 Left   :
-Button 1,Button 2,Button 3,Button 4,Button 5,Button 6,Button 7,Button 8,Button 9,Button 10,Button 11,Button 12,Button 13,Button 14,Button 15,Button 16,None
+
 Right  :
-Camera :
-Speak  :
-Invent.:
-Equip. :
-Slow   :
-Fast   :
+
+
+
+
+
+
 Hits:
 Mana:
 Level:
 Exp:
-Mount:
+
 Str:
 Dex:
 Int:
@@ -60,27 +60,27 @@ Strength:
 Dexterity:
 Intelligence:
 All rights reserved
-Belt Pouch
-Head
-Neck
-Body
-Back
-Feet
-Hands
-Left
-Right
+
+
+
+
+
+
+
+
+
 Compassion:
 Dilligence:
 Honor:
 Faith:
 Courage:
-Fellowship:
+
 Badge of Compassion
 Badge of Dilligence
 Badge of Honor
 Badge of Faith
 Badge of Courage
-Badge of Fellowship
+
 Soldier
 Wizard
 Healer
@@ -229,7 +229,7 @@ a good deed every time you play the
 game...
 And tell other folks about SoulFu
 while you're at it!
- Network Players
+ network players
 Exit Game
 Start Game
 High Score Table
@@ -246,7 +246,7 @@ ActionR:
 ActionL:
 Camera
 Move 
- Helpers
+ helpers
 250 Reserved
 251 Reserved
 252 Reserved
