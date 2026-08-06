@@ -681,6 +681,21 @@ void input_read(void)
         switch(event.type)
         {
             case SDL_KEYDOWN:
+                if(event.key.keysym.sym == SDLK_AC_BACK) {
+                    SDL_Event escEvent;
+                    SDL_memset(&escEvent, 0, sizeof(escEvent)); // Clear memory
+
+                    escEvent.type = SDL_KEYDOWN;
+                    escEvent.key.type = SDL_KEYDOWN;
+                    escEvent.key.state = SDL_PRESSED;
+                    escEvent.key.repeat = 0;
+                    escEvent.key.keysym.sym = SDLK_ESCAPE;
+                    escEvent.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
+
+                    // Push the simulated keydown event to SDL's event queue
+                    SDL_PushEvent(&escEvent);
+                    break;
+                }
                 key = (unsigned short) event.key.keysym.scancode;
                 if(key < MAX_KEY)
                 {
