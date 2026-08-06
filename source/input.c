@@ -926,42 +926,44 @@ void input_read(void)
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 1, 0);
                 if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
                     break;
-                } else {
-                    mouse_idle_timer = 0;
-                    mouse_x = (int)(event.tfinger.x * virtual_x);
-                    mouse_y = (int)(event.tfinger.y * virtual_y);
-                    mouse_pressed[0] = TRUE;
                 }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                mouse_pressed[BUTTON0] = TRUE;
                 break;
 
             case SDL_FINGERMOTION:
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 0);
                 if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
                     break;
-                } else {
-                    mouse_idle_timer = 0;
-                    mouse_x = (int)(event.tfinger.x * virtual_x);
-                    mouse_y = (int)(event.tfinger.y * virtual_y);
-                    int off_x = (signed short) (mouse_x - mouse_last_x);
-                    int off_y = (signed short) (mouse_y - mouse_last_y);
-                    mouse_x = mouse_last_x;
-                    mouse_y = mouse_last_y;
-                    camera_rotation_add_xy[X] -= (signed int) (off_x * CAMERA_ROTATION_RATE);
-                    camera_rotation_add_xy[Y] -= (signed int) (off_y * CAMERA_ROTATION_RATE);
+                }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                
+                mouse_down[BUTTON0] = TRUE;
 
+                if(mouse_last_object == NULL) {
+                    float off_x = event.tfinger.dx * virtual_x;
+                    float off_y = event.tfinger.dy * virtual_y;
+
+                    // Update camera rotation
+                    camera_rotation_add_xy[X] += (int)(off_x * CAMERA_ROTATION_RATE);
+                    camera_rotation_add_xy[Y] += (int)(off_y * CAMERA_ROTATION_RATE);
                 }
                 break;
 
             case SDL_FINGERUP:
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 1);
                 if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
-                    break;   
-                } else {
-                    mouse_idle_timer = 0;
-                    mouse_x = (int)(event.tfinger.x * virtual_x);
-                    mouse_y = (int)(event.tfinger.y * virtual_y);
-                    mouse_unpressed[0] = TRUE;
+                    break;
                 }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                mouse_down[BUTTON0] = FALSE;
+                mouse_unpressed[BUTTON0] = TRUE;
                 break;
 #else
 

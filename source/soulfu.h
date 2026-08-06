@@ -218,11 +218,8 @@ SF_EXTERN unsigned char* kanji_data;
 
 
 // Camera stuff..
-#ifdef __ANDROID__
-#define CAMERA_ROTATION_RATE  45.0f
-#else
+
 #define CAMERA_ROTATION_RATE  90.0f
-#endif
 #define CAMERA_ZOOM_RATE 0.75f
 #define MIN_CAMERA_DISTANCE 10.0f
 //#define MAX_CAMERA_DISTANCE 50.0f
