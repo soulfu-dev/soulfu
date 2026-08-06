@@ -516,7 +516,7 @@ void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, i
         num_joystick = 1;
     }
 
-    // LEFT HALF OF SCREEN (x < 0.5): Movement Joystick
+    // Movement Joystick
     if (touch_x < 0.3f && touch_y > 0.4f) {
         if (is_up) {
             // Finger lifted: reset position to zero
@@ -535,7 +535,6 @@ void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, i
             joystick_position_xy[0][Y] = dy;
         }
     }
-    // RIGHT HALF OF SCREEN (x >= 0.5): Action Buttons
     else {
         float btn_radius = 0.06f;
         // Button 0 (Bottom)
@@ -543,17 +542,17 @@ void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, i
         float b0_dy = touch_y - 0.80f;
         int inside_b0 = (sqrtf(b0_dx * b0_dx + b0_dy * b0_dy) <= btn_radius);
 
-        // Button 1 (Right / Jump)
+        // Button 1 (Right)
         float b1_dx = touch_x - 0.90f;
         float b1_dy = touch_y - 0.68f;
         int inside_b1 = (sqrtf(b1_dx * b1_dx + b1_dy * b1_dy) <= btn_radius);
 
-        // Button 2 (Left / Defend)
+        // Button 2 (Left)
         float b2_dx = touch_x - 0.74f;
         float b2_dy = touch_y - 0.68f;
         int inside_b2 = (sqrtf(b2_dx * b2_dx + b2_dy * b2_dy) <= btn_radius);
 
-        // Button 3 (Top / Magic)
+        // Button 3 (Top)
         float b3_dx = touch_x - 0.82f;
         float b3_dy = touch_y - 0.56f;
         int inside_b3 = (sqrtf(b3_dx * b3_dx + b3_dy * b3_dy) <= btn_radius);
@@ -583,7 +582,7 @@ void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, i
 }
 
 // --------------------------------------------------------------------
-// HUD Rendering: Call right before SDL_GL_SwapWindow()
+// HUD Rendering
 // --------------------------------------------------------------------
 void render_mobile_touch_overlay(void) 
 {
