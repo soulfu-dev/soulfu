@@ -924,7 +924,7 @@ void input_read(void)
 #ifdef __ANDROID__
             case SDL_FINGERDOWN:
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 1, 0);
-                if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
                     break;
                 }
                 mouse_idle_timer = 0;
@@ -935,7 +935,7 @@ void input_read(void)
 
             case SDL_FINGERMOTION:
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 0);
-                if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
                     break;
                 }
                 mouse_idle_timer = 0;
@@ -956,7 +956,7 @@ void input_read(void)
 
             case SDL_FINGERUP:
                 process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 1);
-                if(event.tfinger.x <= 0.3f && event.tfinger.y >=0.4f ) {
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
                     break;
                 }
                 mouse_idle_timer = 0;
