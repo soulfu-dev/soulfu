@@ -425,7 +425,11 @@ void input_setup(void)
         player_device_controls_active[i] = TRUE;
         local_player_character[i] = MAX_CHARACTER;
     }
+    // Force SoulFu to accept Player 1 controller inputs
+#ifdef __ANDROID__
+    num_joystick = 1;
     init_virtual_touch_controls();
+#endif
 }
 
 //-------------------------------------------------------------------------------------------
@@ -511,11 +515,6 @@ static void gl4es_draw_circle(float cx, float cy, float r, int segments, float r
 
 void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, int is_up) 
 {
-    // Force SoulFu to accept Player 1 controller inputs
-    if (num_joystick < 1) {
-        num_joystick = 1;
-    }
-
     // Movement Joystick
     if (touch_x < 0.3f && touch_y > 0.4f) {
         if (is_up) {
@@ -957,7 +956,7 @@ void input_read(void)
                 mouse_y = (int)(event.tfinger.y * virtual_y);
                 
                 mouse_down[BUTTON0] = TRUE;
-
+                mouse_pressed[BUTTON0] = TRUE;
                 if(mouse_last_object == NULL) {
                     float off_x = event.tfinger.dx * virtual_x;
                     float off_y = event.tfinger.dy * virtual_y;
@@ -1050,6 +1049,7 @@ void input_read(void)
 
     // Do a device state check on the mouse every 16 drawn frames to make sure our
     // information is accurate (just in case we still get a stuck button)...
+#ifndef __ANDROID__
     if((main_video_frame & 15) == 8)
     {
         button_state = SDL_GetMouseState(NULL, NULL);
@@ -1075,6 +1075,7 @@ void input_read(void)
             }
         }
     }
+#endif
 }
 
 
@@ -1245,6 +1246,7 @@ void input_read(void)
 //-------------------------------------------------------------------------------------------
 void input_camera_controls(void)
 {
+#ifndef __ANDROID__
     // <ZZ> This function allows the players to rotate the camera and zoom in and out...
     signed short off_x, off_y;
     unsigned char count;
@@ -1410,6 +1412,7 @@ void input_camera_controls(void)
             }
         }
     }
+#endif
 }
 
 //-----------------------------------------------------------------------------------------------
