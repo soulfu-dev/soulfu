@@ -53,6 +53,62 @@ android {
     }
 }
 
+task makeData(type: Exec) {
+    description = 'Compiles game scripts/languages and packages datafile.sdf into assets'
+
+    // Points to repository root: soulfu/
+    workingDir "$projectDir/../.."
+
+    commandLine 'bash', '-c', '''
+        set -e
+        shopt -s nullglob
+
+        echo "==> Working Directory: $(pwd)"
+
+        # Verify required host build tools exist
+        for tool in make gcc g++; do
+            if ! command -v $tool &> /dev/null; then
+                echo "ERROR: '$tool' is not installed on your system."
+                exit 1
+            fi
+        done
+
+        # Build host binary tools
+        echo "==> Building host tools..."
+        make -C sdp CC=gcc CXX=g++
+        make -C slc CC=gcc CXX=g++
+        make -C ssc CC=gcc CXX=g++
+
+        chmod +x sdp/sdp slc/slc ssc/ssc
+
+        # Convert language files (*.txt -> datadir/*.LAN)
+        echo "==> Converting language files..."
+        for txt in language/*.txt; do
+            if [ -f "$txt" ]; then
+                filename=$(basename "$txt" .txt)
+                ./slc/slc --to-lan "$txt" -o "datadir/${filename}.LAN"
+            fi
+        done
+
+        # Compile scripts (*.SRC -> *.RUN)
+        echo "==> Compiling scripts..."
+        src_files=(datadir/*.SRC)
+        if [ ${#src_files[@]} -gt 0 ]; then
+            ./ssc/ssc -c -i datadir
+        fi
+
+        # Output datafile.sdf directly to android/app/src/main/assets
+        echo "==> Packaging assets into datafile.sdf..."
+        ASSETS_DIR="android/app/src/main/assets"
+        mkdir -p "$ASSETS_DIR"
+        ./sdp/sdp -p -n -i datadir -o "${ASSETS_DIR}/datafile.sdf"
+
+        echo "==> Assets built successfully!"
+    '''
+}
+
+preBuild.dependsOn makeData
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
