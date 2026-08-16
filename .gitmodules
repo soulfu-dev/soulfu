@@ -19,3 +19,10 @@
 [submodule "mus2xm"]
 	path = mus2xm
 	url = https://github.com/szymor/soulfu-mus2xm.git
+[submodule "SoulFu-android/app/src/main/cpp/gl4es"]
+	path = android/app/src/main/cpp/gl4es
+	url = https://github.com/soulfu-dev/gl4es
+[submodule "SoulFu-android/app/src/main/cpp/SDL2"]
+	path = android/app/src/main/cpp/SDL2
+	url = https://github.com/soulfu-dev/SDL
+	branch = SDL2

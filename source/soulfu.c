@@ -18,8 +18,19 @@
 //    email: aaron@aaronbishopgames.com
 
 // Stuff for SDL
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
+
+
+#ifdef __ANDROID__
+    #include <GL/gl.h>
+    #include <SDL.h>
+    #include <unistd.h>
+    #include <GLES/gl.h>
+    #include <GLES/glext.h>
+    #include <stdbool.h>
+#else
+    #include <SDL2/SDL.h>
+    #include <SDL2/SDL_opengl.h>
+#endif
 // SDL2_net not available on all systems; stub it out for now
 // #include <SDL2/SDL_net.h>
 #ifndef _SDL_NET_H
@@ -580,7 +591,9 @@ if(map_room_data[map_current_room][13] & MAP_ROOM_FLAG_OUTSIDE) {
     display_zbuffer_on();
 
 
-
+#ifdef __ANDROID__
+    render_mobile_touch_overlay();
+#endif
     // Display everything once it's drawn...
     display_swap();
 
@@ -709,7 +722,13 @@ int main(int argc, char *argv[])
   char *userconf, configfile[1024];
   char config_loaded = FALSE;
 
-
+#ifdef __ANDROID__
+  // Change current working directory to Android internal storage directory
+  const char* internal_path = SDL_AndroidGetInternalStoragePath();
+  if (internal_path && *internal_path) {
+      chdir(internal_path);
+  }
+#endif
   open_logfile();
   log_message("INFO:   ------------------------------------------");
   if(!get_mainbuffer()) { log_message("ERROR:  get_mainbuffer() failed");  exit(1); }
@@ -803,6 +822,12 @@ int main(int argc, char *argv[])
     mip_map_active = (*(config+98));
     fast_and_ugly_active = (*(config+101));
     log_message("INFO:   Config file read okay...");
+
+#ifdef __ANDROID__
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+#endif
 
     // Auto-detect resolution only for fresh/default config (screen_size 0 = 320x200)
     if (screen_size == 0)

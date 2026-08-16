@@ -218,6 +218,7 @@ SF_EXTERN unsigned char* kanji_data;
 
 
 // Camera stuff..
+
 #define CAMERA_ROTATION_RATE  90.0f
 #define CAMERA_ZOOM_RATE 0.75f
 #define MIN_CAMERA_DISTANCE 10.0f

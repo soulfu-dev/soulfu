@@ -335,6 +335,20 @@ void input_update(void)
     }
 }
 
+// Global virtual joystick handle
+SDL_Joystick* g_virtual_joystick = NULL;
+
+// Call this once during launch
+void init_virtual_touch_controls(void) 
+{
+    if (g_virtual_joystick) return;
+
+    int dev_index = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, 2, 4, 0);
+    if (dev_index >= 0) {
+        g_virtual_joystick = SDL_JoystickOpen(dev_index);
+    }
+}
+
 //-------------------------------------------------------------------------------------------
 void input_setup(void)
 {
@@ -411,6 +425,11 @@ void input_setup(void)
         player_device_controls_active[i] = TRUE;
         local_player_character[i] = MAX_CHARACTER;
     }
+    // Force SoulFu to accept Player 1 controller inputs
+#ifdef __ANDROID__
+    num_joystick = 1;
+    init_virtual_touch_controls();
+#endif
 }
 
 //-------------------------------------------------------------------------------------------
@@ -465,6 +484,159 @@ void input_reset_window_key_pressed(void)
 }
 
 
+#ifndef X
+#define X 0
+#define Y 1
+#endif
+
+// Global Joystick Config (Normalized coordinates: 0.0 to 1.0)
+static float joy_base_x = 0.18f; 
+static float joy_base_y = 0.75f; 
+static float joy_radius = 0.12f;
+
+typedef struct {
+    float x, y, radius;
+} TouchButton;
+
+static TouchButton g_touch_buttons[4];
+
+// Helper: Draw filled circle in gl4es
+static void gl4es_draw_circle(float cx, float cy, float r, int segments, float red, float green, float blue, float alpha) 
+{
+    glColor4f(red, green, blue, alpha);
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(cx, cy);
+        for (int i = 0; i <= segments; i++) {
+            float theta = 2.0f * 3.1415926f * (float)i / (float)segments;
+            glVertex2f(cx + r * cosf(theta), cy + r * sinf(theta));
+        }
+    glEnd();
+}
+
+void process_touch_virtual_joystick(float touch_x, float touch_y, int is_down, int is_up) 
+{
+    // Movement Joystick
+    if (touch_x < 0.3f && touch_y > 0.4f) {
+        if (is_up) {
+            // Finger lifted: reset position to zero
+            joystick_position_xy[0][X] = 0.0f;
+            joystick_position_xy[0][Y] = 0.0f;
+        } else {
+            float dx = (touch_x - joy_base_x) / joy_radius;
+            float dy = (touch_y - joy_base_y) / joy_radius;
+
+            // Clamp distance between -1.0 and 1.0
+            if (dx < -1.0f) dx = -1.0f; else if (dx > 1.0f) dx = 1.0f;
+            if (dy < -1.0f) dy = -1.0f; else if (dy > 1.0f) dy = 1.0f;
+
+            // Write directly to SoulFu's movement array
+            joystick_position_xy[0][X] = dx;
+            joystick_position_xy[0][Y] = dy;
+        }
+    }
+    else {
+        float btn_radius = 0.06f;
+        // Button 0 (Bottom)
+        float b0_dx = touch_x - 0.82f;
+        float b0_dy = touch_y - 0.80f;
+        int inside_b0 = (sqrtf(b0_dx * b0_dx + b0_dy * b0_dy) <= btn_radius);
+
+        // Button 1 (Right)
+        float b1_dx = touch_x - 0.90f;
+        float b1_dy = touch_y - 0.68f;
+        int inside_b1 = (sqrtf(b1_dx * b1_dx + b1_dy * b1_dy) <= btn_radius);
+
+        // Button 2 (Left)
+        float b2_dx = touch_x - 0.74f;
+        float b2_dy = touch_y - 0.68f;
+        int inside_b2 = (sqrtf(b2_dx * b2_dx + b2_dy * b2_dy) <= btn_radius);
+
+        // Button 3 (Top)
+        float b3_dx = touch_x - 0.82f;
+        float b3_dy = touch_y - 0.56f;
+        int inside_b3 = (sqrtf(b3_dx * b3_dx + b3_dy * b3_dy) <= btn_radius);
+
+        if (is_up) {
+            joystick_button_unpressed[0][1] = TRUE;
+            joystick_button_down[0][1] = FALSE;
+            joystick_button_unpressed[0][2] = TRUE;
+            joystick_button_down[0][2] = FALSE;
+            joystick_button_unpressed[0][3] = TRUE;
+            joystick_button_down[0][3] = FALSE;
+            joystick_button_unpressed[0][4] = TRUE;
+            joystick_button_down[0][4] = FALSE;
+            
+        } else {
+            joystick_button_pressed[0][1] = inside_b0 ? TRUE : FALSE;
+            joystick_button_down[0][1] = inside_b0 ? TRUE : FALSE;
+            joystick_button_pressed[0][2] = inside_b1 ? TRUE : FALSE;
+            joystick_button_down[0][2] = inside_b1 ? TRUE : FALSE;
+            joystick_button_pressed[0][3] = inside_b2 ? TRUE : FALSE;
+            joystick_button_down[0][3] = inside_b2 ? TRUE : FALSE;
+            joystick_button_pressed[0][4] = inside_b3 ? TRUE : FALSE;
+            joystick_button_down[0][4] = inside_b3 ? TRUE : FALSE;
+            
+        }
+    }
+}
+
+// --------------------------------------------------------------------
+// HUD Rendering
+// --------------------------------------------------------------------
+void render_mobile_touch_overlay(void) 
+{
+    if(play_game_active) {
+        float center_x = virtual_x * joy_base_x; 
+        float center_y = virtual_y * joy_base_y; 
+        float radius   = virtual_x * joy_radius; 
+        float btn_radius = virtual_x * 0.06f;
+
+        g_touch_buttons[0] = (TouchButton){ virtual_x * 0.82f, virtual_y * 0.80f, btn_radius }; // [0] Bottom (Attack)
+        g_touch_buttons[1] = (TouchButton){ virtual_x * 0.90f, virtual_y * 0.68f, btn_radius }; // [1] Right  (Jump)
+        g_touch_buttons[2] = (TouchButton){ virtual_x * 0.74f, virtual_y * 0.68f, btn_radius }; // [2] Left   (Defend)
+        g_touch_buttons[3] = (TouchButton){ virtual_x * 0.82f, virtual_y * 0.56f, btn_radius }; // [3] Top    (Magic)
+        
+        // Setup 2D Orthographic Projection in gl4es
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0.0, virtual_x, virtual_y, 0.0, -1.0, 1.0); 
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Draw Joystick Base
+        gl4es_draw_circle(center_x, center_y, radius, 32, 1.0f, 1.0f, 1.0f, 0.25f);
+
+        // Draw Thumbstick (positioned directly by SoulFu's movement array)
+        float thumb_x = center_x + (joystick_position_xy[0][X] * radius);
+        float thumb_y = center_y + (joystick_position_xy[0][Y] * radius);
+        gl4es_draw_circle(thumb_x, thumb_y, radius * 0.40f, 24, 1.0f, 1.0f, 1.0f, 0.60f);
+
+        // Draw Action Buttons
+        for (int i = 0; i < 4; i++) {
+            int is_pressed = joystick_button_down[0][i + 1]; 
+            float alpha = is_pressed ? 0.85f : 0.35f;
+            gl4es_draw_circle(g_touch_buttons[i].x, g_touch_buttons[i].y, g_touch_buttons[i].radius, 24, 0.2f, 0.7f, 1.0f, alpha);
+        }
+
+        // Restore GL State
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+    }
+}
+
 //-----------------------------------------------------------------------------------------------
 void input_read(void)
 {
@@ -507,6 +679,21 @@ void input_read(void)
         switch(event.type)
         {
             case SDL_KEYDOWN:
+                if(event.key.keysym.sym == SDLK_AC_BACK) {
+                    SDL_Event escEvent;
+                    SDL_memset(&escEvent, 0, sizeof(escEvent)); // Clear memory
+
+                    escEvent.type = SDL_KEYDOWN;
+                    escEvent.key.type = SDL_KEYDOWN;
+                    escEvent.key.state = SDL_PRESSED;
+                    escEvent.key.repeat = 0;
+                    escEvent.key.keysym.sym = SDLK_ESCAPE;
+                    escEvent.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
+
+                    // Push the simulated keydown event to SDL's event queue
+                    SDL_PushEvent(&escEvent);
+                    break;
+                }
                 key = (unsigned short) event.key.keysym.scancode;
                 if(key < MAX_KEY)
                 {
@@ -564,6 +751,7 @@ void input_read(void)
                     display_handle_resize(event.window.data1, event.window.data2);
                 }
                 break;
+#ifndef __ANDROID__
             case SDL_MOUSEMOTION:
                 mouse_idle_timer = 0;
                 if(display_full_screen)
@@ -579,6 +767,7 @@ void input_read(void)
                     mouse_y = event.motion.y * virtual_y / screen_y;
                 }
                 break;
+#endif
             case SDL_JOYAXISMOTION:
                 event.jbutton.which = input_map_joystick_instance_id(event.jbutton.which);
                 if(event.jaxis.which < MAX_JOYSTICK)
@@ -744,6 +933,53 @@ void input_read(void)
                     }
                 }
                 break;
+
+#ifdef __ANDROID__
+            case SDL_FINGERDOWN:
+                process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 1, 0);
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
+                    break;
+                }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                mouse_pressed[BUTTON0] = TRUE;
+                break;
+
+            case SDL_FINGERMOTION:
+                process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 0);
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
+                    break;
+                }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                
+                mouse_down[BUTTON0] = TRUE;
+                mouse_pressed[BUTTON0] = TRUE;
+                if(mouse_last_object == NULL) {
+                    float off_x = event.tfinger.dx * virtual_x;
+                    float off_y = event.tfinger.dy * virtual_y;
+
+                    // Update camera rotation
+                    camera_rotation_add_xy[X] += (int)(off_x * CAMERA_ROTATION_RATE);
+                    camera_rotation_add_xy[Y] += (int)(off_y * CAMERA_ROTATION_RATE);
+                }
+                break;
+
+            case SDL_FINGERUP:
+                process_touch_virtual_joystick(event.tfinger.x, event.tfinger.y, 0, 1);
+                if(event.tfinger.x <= 0.35f && event.tfinger.y >=0.4f && play_game_active) {
+                    break;
+                }
+                mouse_idle_timer = 0;
+                mouse_x = (int)(event.tfinger.x * virtual_x);
+                mouse_y = (int)(event.tfinger.y * virtual_y);
+                mouse_down[BUTTON0] = FALSE;
+                mouse_unpressed[BUTTON0] = TRUE;
+                break;
+#else
+
             case SDL_MOUSEBUTTONUP:
                 mouse_idle_timer = 0;
                 i = (event.button.button-1);
@@ -771,6 +1007,7 @@ void input_read(void)
                     }
                 }
                 break;
+#endif
             default:
                 break;
         }
@@ -812,6 +1049,7 @@ void input_read(void)
 
     // Do a device state check on the mouse every 16 drawn frames to make sure our
     // information is accurate (just in case we still get a stuck button)...
+#ifndef __ANDROID__
     if((main_video_frame & 15) == 8)
     {
         button_state = SDL_GetMouseState(NULL, NULL);
@@ -837,6 +1075,7 @@ void input_read(void)
             }
         }
     }
+#endif
 }
 
 
@@ -1007,6 +1246,7 @@ void input_read(void)
 //-------------------------------------------------------------------------------------------
 void input_camera_controls(void)
 {
+#ifndef __ANDROID__
     // <ZZ> This function allows the players to rotate the camera and zoom in and out...
     signed short off_x, off_y;
     unsigned char count;
@@ -1172,6 +1412,7 @@ void input_camera_controls(void)
             }
         }
     }
+#endif
 }
 
 //-----------------------------------------------------------------------------------------------

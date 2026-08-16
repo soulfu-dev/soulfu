@@ -1,0 +1,119 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.game.soulfu'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.game.soulfu"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // 1. Configure CMake arguments & specify ABI architectures
+        externalNativeBuild {
+            cmake {
+                // Ensures standard C++ runtime sharing if dependencies need C++
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+
+        // Build ABIs for 32-bit & 64-bit ARM/x86 architectures
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    // 2. Point Gradle to your root CMakeLists.txt file
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/cpp/SDL2/android-project/app/src/main/java/'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+task makeData(type: Exec) {
+    description = 'Compiles game scripts/languages and packages datafile.sdf into assets'
+
+    // Points to repository root: soulfu/
+    workingDir "$projectDir/../.."
+
+    commandLine 'bash', '-c', '''
+        set -e
+        shopt -s nullglob
+
+        echo "==> Working Directory: $(pwd)"
+
+        # Verify required host build tools exist
+        for tool in make gcc g++; do
+            if ! command -v $tool &> /dev/null; then
+                echo "ERROR: '$tool' is not installed on your system."
+                exit 1
+            fi
+        done
+
+        # Build host binary tools
+        echo "==> Building host tools..."
+        make -C sdp CC=gcc CXX=g++
+        make -C slc CC=gcc CXX=g++
+        make -C ssc CC=gcc CXX=g++
+
+        chmod +x sdp/sdp slc/slc ssc/ssc
+
+        # Convert language files (*.txt -> datadir/*.LAN)
+        echo "==> Converting language files..."
+        for txt in language/*.txt; do
+            if [ -f "$txt" ]; then
+                filename=$(basename "$txt" .txt)
+                ./slc/slc --to-lan "$txt" -o "datadir/${filename}.LAN"
+            fi
+        done
+
+        # Compile scripts (*.SRC -> *.RUN)
+        echo "==> Compiling scripts..."
+        src_files=(datadir/*.SRC)
+        if [ ${#src_files[@]} -gt 0 ]; then
+            ./ssc/ssc -c -i datadir
+        fi
+
+        # Output datafile.sdf directly to android/app/src/main/assets
+        echo "==> Packaging assets into datafile.sdf..."
+        ASSETS_DIR="android/app/src/main/assets"
+        mkdir -p "$ASSETS_DIR"
+        ./sdp/sdp -p -n -i datadir -o "${ASSETS_DIR}/datafile.sdf"
+
+        echo "==> Assets built successfully!"
+    '''
+}
+
+preBuild.dependsOn makeData
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
